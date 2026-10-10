@@ -1,0 +1,13 @@
+{
+    "manifest_version": 3,
+    "name": "PassFort",
+    "version": "1.0.0",
+    "description": "Privacy-first password strength checker and secure password generator. Runs fully offline.",
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_title": "PassFort"
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; form-action 'none'"
+    }
+}
