@@ -344,3 +344,16 @@ button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.breach {
+    margin-top: 12px;
+}
+
+.breach button {
+    width: 100%;
+}
+
+#breach-result {
+    min-height: 18px;
+    margin: 6px 0 0;
+}

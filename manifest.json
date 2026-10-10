@@ -12,6 +12,6 @@
         "default_title": "PassFort"
     },
     "content_security_policy": {
-        "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; form-action 'none'"
+        "extension_pages": "script-src 'self'; object-src 'self'; base-uri 'none'; form-action 'none'; connect-src https://api.pwnedpasswords.com"
     }
 }

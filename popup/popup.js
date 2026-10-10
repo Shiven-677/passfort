@@ -160,3 +160,41 @@ copyBtn.addEventListener('click', async () => {
 });
 
 refreshPassword();   // show a password as soon as the popup opens
+
+
+
+// ---------- Optional breach check (Have I Been Pwned, k-anonymity) ----------
+const { checkBreach } = PassFort.breach;
+const breachBtn = document.getElementById('breach-btn');
+const breachResult = document.getElementById('breach-result');
+
+function showBreach(text, cls) {
+    breachResult.className = cls;
+    breachResult.textContent = text;
+}
+
+// A result is stale as soon as the password changes
+passwordInput.addEventListener('input', () => showBreach('', 'muted'));
+
+breachBtn.addEventListener('click', async () => {
+    const pw = passwordInput.value;
+    if (!pw) { showBreach('Type a password first.', 'muted'); return; }
+
+    breachBtn.disabled = true;
+    showBreach('Checking…', 'muted');
+    try {
+        const { breached, count } = await checkBreach(pw);
+        if (passwordInput.value !== pw) return;   // user edited it meanwhile: ignore result
+        if (breached) {
+            showBreach(`Seen ${count.toLocaleString()} times in known data breaches. Do not use it.`, 'error');
+        } else {
+            showBreach('Not found in known breaches. That does not guarantee it is safe.', 'status');
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') showBreach('The request timed out. Try again.', 'error');
+        else if (err instanceof TypeError) showBreach("Couldn't reach the breach service (offline or blocked).", 'error');
+        else showBreach(err.message, 'error');
+    } finally {
+        breachBtn.disabled = false;
+    }
+});

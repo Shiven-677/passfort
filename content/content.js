@@ -2,18 +2,22 @@
  * PassFort - in-page strength meter (content script)
  *
  * Injected ONLY when the user clicks "Activate on this page" in the popup.
- * Shows a floating meter under password fields while the user types.
+ *
+ * Shows, under a password field:
+ *   - live strength meter + tips
+ *   - a warning if the page or the form's target uses insecure HTTP
+ *   - a warning if the password contains the user's own name/username/email
  *
  * PRIVACY / SECURITY:
- *  - The password is read only inside update(), analysed in memory, and dropped.
- *  - No messaging, storage, network, or logging of the password.
- *  - UI lives in a CLOSED shadow root, so page scripts can't read or restyle it.
- *  - Built with createElement + textContent only (no innerHTML).
+ *  - Everything stays in memory in this isolated script. No messaging,
+ *    storage, network, or logging of the password or the other form values.
+ *  - Other form fields are read only to compare, never password-type fields.
+ *  - UI lives in a CLOSED shadow root; built with createElement + textContent.
  */
 (function () {
     'use strict';
 
-    if (window.__passfortActive) return;          // already running on this page
+    if (window.__passfortActive) return;
     if (!globalThis.PassFort || !globalThis.PassFort.strength) return;
     window.__passfortActive = true;
 
@@ -34,6 +38,12 @@
     .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .brand { font-weight: 700; font-size: 12px; letter-spacing: 0.3px; color: #22d3ee; }
     .label { font-weight: 700; }
+    .warn {
+      margin-bottom: 8px; padding: 6px 8px; font-size: 12px; font-weight: 600;
+      color: #fecaca; background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444; border-radius: 6px;
+    }
+    .warn[hidden] { display: none; }
     .meter { display: flex; gap: 4px; }
     .seg { flex: 1; height: 6px; border-radius: 3px; background: #22304d; }
     .panel[data-level="1"] .seg:nth-child(-n+1) { background: #ef4444; }
@@ -86,6 +96,10 @@
     const head = el('div', 'head');
     head.append(el('span', 'brand', 'PassFort'), labelEl);
 
+    const warnEl = el('div', 'warn');
+    warnEl.setAttribute('role', 'alert');
+    warnEl.hidden = true;
+
     const meter = el('div', 'meter');
     meter.setAttribute('aria-hidden', 'true');
     for (let i = 0; i < 4; i++) meter.appendChild(el('span', 'seg'));
@@ -93,9 +107,51 @@
     const detailEl = el('div', 'detail');
     const tipsEl = el('ul', 'tips');
 
-    panel.append(head, meter, detailEl, tipsEl);
+    panel.append(head, warnEl, meter, detailEl, tipsEl);
     shadow.appendChild(panel);
     document.documentElement.appendChild(host);
+
+    // ---------- Page-security + personal-info helpers ----------
+
+    // Forms/documents can shadow their own methods via named inputs (DOM clobbering),
+    // so we call the built-in methods directly instead of form.getAttribute(...) etc.
+    const getAttr = (node, name) => Element.prototype.getAttribute.call(node, name);
+    const queryAll = (root, selector) =>
+        (root === document ? Document : Element).prototype.querySelectorAll.call(root, selector);
+
+    // Returns a warning string, or '' if nothing is wrong.
+    function securityWarning(field) {
+        // 1) Page itself loaded over plain HTTP (localhost/127.0.0.1 count as secure)
+        if (!window.isSecureContext) {
+            return 'Not secure: this page uses HTTP, so a password typed here can be intercepted.';
+        }
+        // 2) Secure page, but the form posts to an http:// address
+        const form = field.form;
+        const action = form ? getAttr(form, 'action') : null;
+        if (action) {
+            try {
+                if (new URL(action, location.href).protocol === 'http:') {
+                    return 'Warning: this form sends your password over insecure HTTP.';
+                }
+            } catch (err) { /* invalid URL: ignore */ }
+        }
+        return '';
+    }
+
+    // Names / usernames / emails typed in the same form (never password fields).
+    function collectPersonalInfo(field) {
+        const root = field.form || document;
+        const values = [];
+        for (const input of queryAll(root, 'input')) {
+            if (input === field) continue;
+            const type = (input.type || 'text').toLowerCase();
+            if (type !== 'text' && type !== 'email' && type !== 'tel') continue;
+            const value = input.value.trim();
+            if (value.length >= 3 && value.length <= 100) values.push(value);
+            if (values.length >= 10) break;
+        }
+        return values;
+    }
 
     // ---------- Behaviour ----------
     let activeField = null;
@@ -104,9 +160,11 @@
         return node instanceof HTMLInputElement && node.type === 'password';
     }
 
-    function render(result) {
+    function render(result, warning) {
         panel.dataset.level = String(result.score);
         if (labelEl.textContent !== result.label) labelEl.textContent = result.label;
+        warnEl.textContent = warning;
+        warnEl.hidden = !warning;
         detailEl.textContent = result.score
             ? `${result.bits} bits · crack time ≈ ${result.crackTime}`
             : 'Start typing to check strength';
@@ -126,7 +184,6 @@
         const left = Math.min(Math.max(margin, rect.left),
             window.innerWidth - panel.offsetWidth - margin);
         let top = rect.bottom + 6;
-        // not enough room below the field? show above it instead
         if (top + panel.offsetHeight > window.innerHeight - margin &&
             rect.top - panel.offsetHeight - 6 > margin) {
             top = rect.top - panel.offsetHeight - 6;
@@ -137,7 +194,9 @@
 
     function update() {
         if (!activeField || !activeField.isConnected) { hide(); return; }
-        render(assess(activeField.value));   // value is used here and not kept
+        // value + personal info are used here and not kept
+        render(assess(activeField.value, collectPersonalInfo(activeField)),
+            securityWarning(activeField));
         place();
     }
 
@@ -153,7 +212,6 @@
         requestAnimationFrame(() => { placeQueued = false; place(); });
     }
 
-    // Event delegation on document: also covers fields the site adds later (SPAs)
     document.addEventListener('focusin', (e) => {
         if (isPasswordInput(e.target)) { activeField = e.target; update(); }
     }, true);
@@ -164,18 +222,15 @@
 
     document.addEventListener('focusout', (e) => {
         if (e.target !== activeField) return;
-        if (isPasswordInput(e.relatedTarget)) return;   // moving to another password field
+        if (isPasswordInput(e.relatedTarget)) return;
         hide();
     }, true);
 
     window.addEventListener('scroll', schedulePlace, true);
     window.addEventListener('resize', schedulePlace);
 
-    // If a password field already has focus when activated, show the meter now
     if (isPasswordInput(document.activeElement)) {
         activeField = document.activeElement;
         update();
     }
 })();
-
-

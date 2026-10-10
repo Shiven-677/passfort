@@ -20,7 +20,7 @@
             <h1>PassFort</h1>
             <p class="tagline">Privacy-first password security</p>
         </div>
-        <span class="badge" title="No network, no storage">Offline</span>
+        <span class="badge" title="Strength checking is fully local. The breach check is opt-in.">Local-first</span>
     </header>
 
     <div class="tabs" role="tablist" aria-label="PassFort tools">
@@ -51,9 +51,14 @@
             </div>
 
             <ul id="feedback-list" class="feedback" aria-live="polite"></ul>
+            <div class="breach">
+                <button type="button" id="breach-btn" class="btn-secondary">Check if breached</button>
+                <p id="breach-result" class="muted" role="status" aria-live="polite"></p>
+            </div>
 
             <p id="check-privacy" class="note">
-                Your password is analysed on this device only. It is never stored or sent anywhere.
+                Strength is analysed on this device and never stored. The optional breach check
+                sends only an anonymous 5-character hash prefix, and only when you click it.
             </p>
 
             <div class="page-guard">
@@ -110,6 +115,7 @@
 
     <script src="../lib/strength.js"></script>
     <script src="../lib/generator.js"></script>
+    <script src="../lib/breach.js"></script>
     <script type="module" src="popup.js"></script>
 </body>
 
