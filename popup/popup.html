@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PassFort</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <header class="app-header">
+        <svg class="logo" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linejoin="round" />
+            <path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg>
+        <div class="titles">
+            <h1>PassFort</h1>
+            <p class="tagline">Privacy-first password security</p>
+        </div>
+        <span class="badge" title="No network, no storage">Offline</span>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="PassFort tools">
+        <button type="button" role="tab" id="tab-check" aria-selected="true" aria-controls="panel-check">Check</button>
+        <button type="button" role="tab" id="tab-generate" aria-selected="false" aria-controls="panel-generate"
+            tabindex="-1">Generate</button>
+    </div>
+
+    <main>
+        <!-- FEATURE 1: Strength checker -->
+        <section id="panel-check" role="tabpanel" aria-labelledby="tab-check">
+            <label for="password-input">Password to test</label>
+            <div class="input-row">
+                <input type="password" id="password-input" autocomplete="off" autocapitalize="off" autocorrect="off"
+                    spellcheck="false" placeholder="Start typing…" aria-describedby="check-privacy">
+                <button type="button" id="toggle-visibility" class="btn-secondary" aria-pressed="false"
+                    aria-label="Show password">Show</button>
+            </div>
+
+            <div id="strength-meter" class="meter" data-level="0" role="meter" aria-label="Password strength"
+                aria-valuemin="0" aria-valuemax="4" aria-valuenow="0" aria-valuetext="No password entered">
+                <span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span>
+            </div>
+
+            <div class="meter-info">
+                <strong id="strength-label" aria-live="polite">Enter a password</strong>
+                <span id="strength-detail" class="muted"></span>
+            </div>
+
+            <ul id="feedback-list" class="feedback" aria-live="polite"></ul>
+
+            <p id="check-privacy" class="note">
+                Your password is analysed on this device only. It is never stored or sent anywhere.
+            </p>
+        </section>
+
+        <!-- FEATURE 2: Generator -->
+        <section id="panel-generate" role="tabpanel" aria-labelledby="tab-generate" hidden>
+            <label for="generated-password">Generated password</label>
+            <div class="input-row">
+                <input type="text" id="generated-password" readonly spellcheck="false" autocomplete="off" class="mono"
+                    placeholder="Click Regenerate">
+            </div>
+            <div class="button-row">
+                <button type="button" id="copy-btn" class="btn-primary">Copy</button>
+                <button type="button" id="regenerate-btn" class="btn-secondary">Regenerate</button>
+            </div>
+            <p id="copy-status" class="status" role="status" aria-live="polite"></p>
+
+            <div class="field">
+                <div class="field-head">
+                    <label for="length-range">Length</label>
+                    <output id="length-value" for="length-range">16</output>
+                </div>
+                <input type="range" id="length-range" min="8" max="64" value="16">
+            </div>
+
+            <fieldset class="options">
+                <legend>Character types</legend>
+                <label class="check"><input type="checkbox" id="opt-lower" checked> Lowercase (a-z)</label>
+                <label class="check"><input type="checkbox" id="opt-upper" checked> Uppercase (A-Z)</label>
+                <label class="check"><input type="checkbox" id="opt-numbers" checked> Numbers (0-9)</label>
+                <label class="check"><input type="checkbox" id="opt-symbols" checked> Symbols (!@#$…)</label>
+                <label class="check"><input type="checkbox" id="opt-ambiguous"> Avoid look-alikes (O, 0, l, 1,
+                    I)</label>
+            </fieldset>
+
+            <p id="generator-error" class="error" role="alert"></p>
+
+            <p class="note warning">
+                PassFort does not store passwords. Save this one somewhere safe yourself, or you won't be able to get it
+                back.
+            </p>
+        </section>
+    </main>
+
+    <script src="../lib/strength.js"></script>
+    <script type="module" src="popup.js"></script>
+</body>
+
+</html>
