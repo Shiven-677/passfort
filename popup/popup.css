@@ -339,3 +339,8 @@ input[type="range"] {
 .page-guard button {
     width: 100%;
 }
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

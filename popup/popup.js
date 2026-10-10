@@ -88,3 +88,75 @@ activateBtn.addEventListener('click', async () => {
             "Can't run on this page. Browser pages (chrome://), the Web Store and some PDFs are blocked.";
     }
 });
+
+
+
+// ---------- Feature 2: password generator ----------
+const { generate } = PassFort.generator;
+
+const generatedInput = document.getElementById('generated-password');
+const copyBtn = document.getElementById('copy-btn');
+const regenerateBtn = document.getElementById('regenerate-btn');
+const copyStatus = document.getElementById('copy-status');
+const entropyInfo = document.getElementById('entropy-info');
+const lengthRange = document.getElementById('length-range');
+const lengthValue = document.getElementById('length-value');
+const generatorError = document.getElementById('generator-error');
+const typeBoxes = ['opt-lower', 'opt-upper', 'opt-numbers', 'opt-symbols', 'opt-ambiguous']
+    .map((id) => document.getElementById(id));
+
+function readOptions() {
+    return {
+        length: Number(lengthRange.value),
+        lower: document.getElementById('opt-lower').checked,
+        upper: document.getElementById('opt-upper').checked,
+        numbers: document.getElementById('opt-numbers').checked,
+        symbols: document.getElementById('opt-symbols').checked,
+        avoidAmbiguous: document.getElementById('opt-ambiguous').checked
+    };
+}
+
+function refreshPassword() {
+    copyStatus.textContent = '';
+    try {
+        const { password, bits } = generate(readOptions());
+        generatedInput.value = password;
+        entropyInfo.textContent = `≈ ${bits} bits of entropy`;
+        generatorError.textContent = '';
+        copyBtn.disabled = false;
+    } catch (err) {
+        // e.g. no character type selected
+        generatedInput.value = '';
+        entropyInfo.textContent = '';
+        generatorError.textContent = err.message;
+        copyBtn.disabled = true;
+    }
+}
+
+lengthRange.addEventListener('input', () => {
+    lengthValue.textContent = lengthRange.value;
+    refreshPassword();
+});
+typeBoxes.forEach((box) => box.addEventListener('change', refreshPassword));
+regenerateBtn.addEventListener('click', refreshPassword);
+
+let copyTimer;
+copyBtn.addEventListener('click', async () => {
+    if (!generatedInput.value) return;
+    let ok = true;
+    try {
+        await navigator.clipboard.writeText(generatedInput.value);
+    } catch (err) {
+        // fallback for older behaviour
+        generatedInput.select();
+        ok = document.execCommand('copy');
+    }
+    copyStatus.className = ok ? 'status' : 'error';
+    copyStatus.textContent = ok
+        ? 'Copied to clipboard.'
+        : 'Copy failed. Select the text and press Ctrl+C.';
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => { copyStatus.textContent = ''; }, 2500);
+});
+
+refreshPassword();   // show a password as soon as the popup opens
