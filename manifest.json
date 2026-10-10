@@ -3,6 +3,10 @@
     "name": "PassFort",
     "version": "1.0.0",
     "description": "Privacy-first password strength checker and secure password generator. Runs fully offline.",
+    "permissions": [
+        "activeTab",
+        "scripting"
+    ],
     "action": {
         "default_popup": "popup/popup.html",
         "default_title": "PassFort"

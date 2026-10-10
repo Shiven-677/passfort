@@ -329,3 +329,13 @@ input[type="range"] {
 #strength-label[data-level="4"] {
     color: var(--strong);
 }
+
+.page-guard {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.page-guard button {
+    width: 100%;
+}

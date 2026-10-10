@@ -65,3 +65,26 @@ toggleBtn.addEventListener('click', () => {
 });
 
 renderStrength(assess(''));
+
+// ---------- In-page meter: activate on the current tab ----------
+const activateBtn = document.getElementById('activate-btn');
+const activateStatus = document.getElementById('activate-status');
+
+activateBtn.addEventListener('click', async () => {
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab || tab.id === undefined) throw new Error('No active tab');
+
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['lib/strength.js', 'content/content.js']
+        });
+
+        activateStatus.className = 'status';
+        activateStatus.textContent = 'Active on this tab. Click into a password field.';
+    } catch (err) {
+        activateStatus.className = 'error';
+        activateStatus.textContent =
+            "Can't run on this page. Browser pages (chrome://), the Web Store and some PDFs are blocked.";
+    }
+});
